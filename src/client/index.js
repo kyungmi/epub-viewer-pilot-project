@@ -39,53 +39,21 @@ function updateContentStyle() {
   }
 }
 
-//
-// 폰트 가져오기를 한번에 처리하기 위한 프리로드
-
 function prepareFonts(fonts, unzipPath, completion) {
-  const fontCount = fonts.length;
-  measure(new Promise((resolve) => {
-    const fontSet = fonts.map(font => font.href).map((href) => {
-      const name = href.split('/').slice(-1)[0].replace(/\./g, '_');
-      return {
-        name,
-        style: `@font-face { font-family: "${name}"; src: url("${unzipPath}/${href}"); }`,
-      };
-    });
+  const fontSet = fonts.map(font => font.href).map((href) => {
+    const name = href.split('/').slice(-1)[0].replace(/\./g, '_');
+    return {
+      name,
+      url: `${unzipPath}/${href}`,
+    };
+  });
 
-    const dummyStyle = document.createElement('style');
-    const fontfaceStyle = fontSet.map(font => font.style).join(' ');
-    const paragraphStyle = fontSet.map(font => `.${font.name} { font-family: ${font.name} }`).join(' ');
-    dummyStyle.innerHTML = fontfaceStyle + paragraphStyle;
-    document.head.appendChild(dummyStyle);
+  const fontFaces = fontSet.map(({ name, url }) => new FontFace(name, `url(${url})`));
 
-    const dummyContent = document.createElement('div');
-    fontSet.forEach((font) => {
-      const dummyText = document.createElement('p');
-      dummyText.setAttribute('class', font.name);
-      dummyText.innerText = 'dummyText';
-      dummyContent.appendChild(dummyText);
-    });
-    document.body.appendChild(dummyContent);
-
-    setTimeout(() => {
-      let count = 0;
-      const poll = () => {
-        document.fonts.forEach((font) => {
-          count += (font.status.indexOf('loading') === -1) ? 1 : 0;
-        });
-        if (count >= fontCount) {
-          document.head.removeChild(dummyStyle);
-          document.body.removeChild(dummyContent);
-          resolve();
-          setTimeout(completion, 0); // dummy 엘리먼트 제거 완료를 기다림
-        } else {
-          setTimeout(poll, 5);
-        }
-      };
-      poll();
-    }, 0);
-  }), `${fontCount} fonts loaded`);
+  measure(Promise.all(fontFaces.map(fontFace => fontFace.load())).then(() => {
+    fontFaces.forEach(f => document.fonts.add(f));
+    setTimeout(completion, 0);
+  }), `${fonts.length} fonts loaded`);
 }
 
 //
