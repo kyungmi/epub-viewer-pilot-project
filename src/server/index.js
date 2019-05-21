@@ -9,6 +9,19 @@ const dataPath = './data';
 const app = express();
 const port = 8080;
 
+// const getFonts = (styles) => {
+//   const regex = /@font-face\{font-family:["]?([\w\s]+)["]?;src:url\(["]?([\w\s\/\.\-_]+)["]?\)\}/g;
+//   const fonts = [];
+//   styles.forEach(style => {
+//     let result;
+//     while((result = regex.exec(style)) !== null) {
+//       const [mached, name, href] = result;
+//       fonts.push({ name, href: `${href}` });
+//     }
+//   });
+//   return fonts;
+// };
+
 const fetchBook = (fileName) => {
   return new Promise((resolve, reject) => {
     const filePath = path.join(dataPath, fileName);
@@ -25,12 +38,13 @@ const fetchBook = (fileName) => {
         };
         parser.readItems(book.spines.concat(book.styles), { basePath, extractBody }).then((results) => {
           const position = book.spines.length;
+          const styles = results.slice(position);
           resolve({
             unzipPath,
             book,
             spines: results.slice(0, position),
-            styles: results.slice(position),
-            fonts: book.fonts,
+            styles,
+            fonts: book.fonts, // getFonts(styles),
           });
         });
       });

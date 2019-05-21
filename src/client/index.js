@@ -102,9 +102,8 @@ function startPaging() {
 
 function loadBook(result) {
   console.log(result.book); // 파싱된 전체 메타데이터
-
+  appendStyles(result.styles);
   prepareFonts(result.fonts, result.unzipPath, () => {
-    appendStyles(result.styles);
     appendSpines(result.spines);
     measure(new Promise((onDomLoaded) => {
       setTimeout(() => {
