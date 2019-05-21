@@ -1,5 +1,5 @@
 import React from 'react';
-import { fetchBook } from './content-loader';
+import { appendStyles, fetchBook, prepareFonts, startPaging, waitImagesLoaded } from './content-loader';
 
 export default class App extends React.Component {
   contentRef = React.createRef();
@@ -25,14 +25,27 @@ export default class App extends React.Component {
 
   onFileChanged() {
     const file = document.getElementById('import').files[0];
-    fetchBook(file, this.contentRef.current, this.onSpineLoaded);
+    // style 붙이기 -> 폰트 preload -> spine 붙이기 -> 이미지 로드 대기 -> 페이지 계산
+    fetchBook(file, this.contentRef.current)
+      .then(appendStyles)
+      .then(prepareFonts)
+      .then(this.onSpineLoaded)
+      .then(waitImagesLoaded)
+      .then(startPaging)
+      .catch(e => console.error(e));
   }
 
-  onSpineLoaded(spines) {
-    this.setState({ content: spines.join('') });
+  onSpineLoaded(data) {
+    this.setState({ content: data.spines.join('') });
+    return data;
   }
 
   render() {
-    return (<div ref={this.contentRef} dangerouslySetInnerHTML={{ __html: this.state.content }} />);
+    return (
+      <div
+        ref={this.contentRef}
+        dangerouslySetInnerHTML={{ __html: this.state.content }}
+      />
+    );
   }
 }

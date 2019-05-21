@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getRootElement, measure, measureSync } from './util';
+import { getRootElement, measure } from './util';
 import { renderContext } from './setting';
 
 function getContentRoot() {
@@ -9,8 +9,8 @@ function getContentRoot() {
 //
 // 페이징
 
-function startPaging() {
-  measureSync(() => {
+export function startPaging() {
+  return measure(() => {
     let pageCount = 0;
     if (renderContext.scrollMode) {
       const pageHeightUnit = document.documentElement.clientHeight;
@@ -26,93 +26,65 @@ function startPaging() {
   }, 'Paging done');
 }
 
-function appendStyles(styles) {
-  measureSync(() => {
+export function appendStyles(data) {
+  return measure(() => {
     const element = document.createElement('style');
-    element.innerText = styles.join(' ');
+    element.innerText = data.styles.join(' ');
     document.head.appendChild(element);
+    return data;
   }, 'Added Styles');
 }
 
-//
-// parser가 넘겨준 스파인과 스타일을 DOM에 추가
 
-function appendSpines(spines) {
-  measureSync(() => {
-    const fragment = document.createDocumentFragment();
-    const element = document.createElement('div');
-    element.innerHTML = spines.join(''); // 이렇게 할거면 DocumentFragment는 필요 없는데...?
-    fragment.appendChild(element);
-    getContentRoot().appendChild(fragment);
-  }, 'Added Spines');
-}
-
-
-function prepareFonts(fonts, unzipPath, completion) {
-  const fontSet = fonts.map(font => font.href).map((href) => {
+export function prepareFonts(data) {
+  const fontSet = data.fonts.map(font => font.href).map((href) => {
     const name = href.split('/').slice(-1)[0].replace(/\./g, '_');
     return {
       name,
-      url: `${unzipPath}/${href}`,
+      url: `${data.unzipPath}/${href}`,
     };
   });
 
   const fontFaces = fontSet.map(({ name, url }) => new FontFace(name, `url(${url})`));
 
-  measure(Promise.all(fontFaces.map(fontFace => fontFace.load())).then(() => {
+  return measure(Promise.all(fontFaces.map(fontFace => fontFace.load())).then(() => {
     fontFaces.forEach(f => document.fonts.add(f));
-    setTimeout(completion, 0);
-  }), `${fonts.length} fonts loaded`);
+    return data;
+  }), `${data.fonts.length} fonts loaded`);
 }
 
-//
-// 파싱 요청과 로드
-
-function loadBook(result, fontPrepared) {
-  console.log(result.book); // 파싱된 전체 메타데이터
-  appendStyles(result.styles);
-  prepareFonts(result.fonts, result.unzipPath, () => {
-    fontPrepared(result.spines);
-    measure(new Promise((onDomLoaded) => {
-      setTimeout(() => {
-        onDomLoaded();
-
-        const imageCount = document.images.length;
-        measure(new Promise((onImagesLoaded) => {
-          let count = 0;
-          const tap = () => {
-            count += 1;
-            if (count === imageCount) {
-              onImagesLoaded();
-              setTimeout(startPaging, 0); // 특별한 의미가 있는 timeout은 아니고, 로그 순서를 맞추기 위함
-            }
-          };
-          Array.from(document.images).forEach((image) => {
-            if (image.complete) {
-              tap();
-            } else {
-              image.addEventListener('load', tap);
-              image.addEventListener('error', tap);
-            }
-          });
-        }), `${imageCount} images loaded`);
-      }, 0); // DOM 갱신 완료를 기다림
-    }), 'DOM loaded');
-  });
+export function waitImagesLoaded() {
+  const imageCount = document.images.length;
+  return measure(new Promise((onImagesLoaded) => {
+    let count = 0;
+    const tap = () => {
+      count += 1;
+      if (count === imageCount) {
+        onImagesLoaded();
+      }
+    };
+    Array.from(document.images).forEach((image) => {
+      if (image.complete) {
+        tap();
+      } else {
+        image.addEventListener('load', tap);
+        image.addEventListener('error', tap);
+      }
+    });
+  }), `${imageCount} images loaded`);
 }
 
-export function fetchBook(file, contentRoot, fontPrepared) {
+export function fetchBook(file, contentRoot) {
   renderContext.contentRoot = contentRoot;
-  axios.get(`/api/book?filename=${encodeURI(file.name)}`).then((response) => {
-    loadBook(response.data, fontPrepared);
+  return axios.get(`/api/book?filename=${encodeURI(file.name)}`).then((response) => {
+    return response.data;
   }).catch((error) => {
     if (error.response.status === 404) {
       const formData = new FormData();
       formData.append('file', file);
-      axios.post('api/book/upload', formData)
-        .then(response => loadBook(response.data));
+      axios.post('api/book/upload', formData).then(response => response.data);
     } else {
-      console.log(error);
+      console.error(error);
     }
   });
 }
