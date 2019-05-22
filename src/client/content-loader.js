@@ -2,19 +2,15 @@ import axios from 'axios';
 import { getRootElement, measure } from './util';
 import { renderContext } from './setting';
 
-function getContentRoot() {
-  return renderContext.contentRoot;
-}
-
 //
 // 페이징
 
-export function startPaging() {
+export function startPaging(contentRoot) {
   return measure(() => {
     let pageCount = 0;
     if (renderContext.scrollMode) {
       const pageHeightUnit = document.documentElement.clientHeight;
-      pageCount = Math.ceil(getContentRoot().scrollHeight / pageHeightUnit);
+      pageCount = Math.ceil(contentRoot.scrollHeight / pageHeightUnit);
     } else {
       const pageWidthUnit = document.documentElement.clientWidth + renderContext.columnGap;
       const spines = Array.from(document.getElementsByTagName('article'));
@@ -74,8 +70,7 @@ export function waitImagesLoaded() {
   }), `${imageCount} images loaded`);
 }
 
-export function fetchBook(file, contentRoot) {
-  renderContext.contentRoot = contentRoot;
+export function fetchBook(file) {
   return axios.get(`/api/book?filename=${encodeURI(file.name)}`).then((response) => {
     return response.data;
   }).catch((error) => {
