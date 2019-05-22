@@ -1,16 +1,16 @@
 import axios from 'axios';
 import { getRootElement, measure } from './util';
-import { renderContext } from './setting';
+import { renderContext, uiRefs } from './setting';
 
 //
 // 페이징
 
-export function startPaging(contentRoot) {
+export function startPaging() {
   return measure(() => {
     let pageCount = 0;
     if (renderContext.scrollMode) {
       const pageHeightUnit = document.documentElement.clientHeight;
-      pageCount = Math.ceil(contentRoot.scrollHeight / pageHeightUnit);
+      pageCount = Math.ceil(uiRefs.contentRoot.scrollHeight / pageHeightUnit);
     } else {
       const pageWidthUnit = document.documentElement.clientWidth + renderContext.columnGap;
       const spines = Array.from(document.getElementsByTagName('article'));
@@ -100,5 +100,3 @@ export function invalidate() {
   updateContentStyle();
   setTimeout(startPaging, 0); // 스타일 갱신 완료를 기다림
 }
-// content 엘리먼트 스타일 초기화
-updateContentStyle();

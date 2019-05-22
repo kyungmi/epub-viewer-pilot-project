@@ -1,7 +1,6 @@
 import React from 'react';
-import { appendStyles, prepareFonts, startPaging, waitImagesLoaded } from '../content-loader';
-import ReaderJsHelper from './ReaderJsHelper';
-import { renderContext } from '../setting';
+import { appendStyles, invalidate, prepareFonts, startPaging, waitImagesLoaded } from '../content-loader';
+import { uiRefs } from '../setting';
 import Events, { SET_CONTENT_METADATA } from './Events';
 
 export default class EpubReader extends React.Component {
@@ -18,9 +17,16 @@ export default class EpubReader extends React.Component {
   }
 
   componentDidMount() {
-    ReaderJsHelper.mount(this.contentRef.current, renderContext.scrollMode);
+    uiRefs.contentRoot = this.contentRef.current;
+    invalidate();
+    window.addEventListener('resize', invalidate);
+    // ReaderJsHelper.mount(this.contentRef.current, renderContext.scrollMode);
 
     Events.on(SET_CONTENT_METADATA, this.onContentMetadataSet);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('resize', invalidate);
   }
 
   onContentMetadataSet(metadata) {
@@ -29,8 +35,8 @@ export default class EpubReader extends React.Component {
       .then(() => prepareFonts(metadata))
       .then(() => this.setState({ content: metadata.spines.join('') }))
       .then(waitImagesLoaded)
-      .then(() => ReaderJsHelper.reviseImages())
-      .then(() => startPaging(this.contentRef.current))
+      // .then(() => ReaderJsHelper.reviseImages())
+      .then(startPaging)
       .catch(e => console.error(e));
   }
 
