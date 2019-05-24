@@ -1,11 +1,13 @@
 import React from 'react';
 import EpubReader from './reader/EpubReader';
-import TopBar from './TopBar';
+import Header from './Header';
+import Footer from './Footer';
 
 const App = () => (
   <div>
-    <TopBar />
+    <Header />
     <EpubReader />
+    <Footer />
   </div>
 );
 

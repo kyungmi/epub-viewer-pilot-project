@@ -121,6 +121,24 @@ input, button {
 #import {
   display: none;
 }
+
+article {
+  -webkit-column-break-before: always;
+  break-before: column;
+}
+
+.footer_area {
+  position: fixed;
+  width: 100%;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  padding: .5rem 0;
+  background: #343a40;
+  border-bottom: 1px solid #808991;
+}
     </style>
   </head>
   <body>

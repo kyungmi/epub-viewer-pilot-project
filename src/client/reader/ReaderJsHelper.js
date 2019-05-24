@@ -1,6 +1,7 @@
 import { Context, Reader, Util } from '@ridi/reader.js/web';
 import { isExist } from './Util';
 import { measure } from '../util';
+import { renderContext, uiRefs } from '../setting';
 
 const DETECTION_TYPE = 'top'; // bottom or top
 const EMPTY_READ_LOCATION = '-1#-1';
@@ -8,7 +9,6 @@ const EMPTY_READ_LOCATION = '-1#-1';
 class ReaderJsHelper {
   _readerJs = null;
 
-  _node = null;
 
   get readerJs() {
     return this._readerJs;
@@ -37,12 +37,11 @@ class ReaderJsHelper {
     return new Context(width, height, columnGap, false, isScrollMode, maxSelectionLength);
   }
 
-  mount(node, isScrollMode) {
+  mount() {
     if (this._readerJs) {
       this.unmount();
     }
-    this._readerJs = new Reader(node, this._createContext(node, isScrollMode));
-    this._node = node;
+    this._readerJs = new Reader(uiRefs.contentRoot, this._createContext(uiRefs.contentRoot, renderContext.scrollMode));
     this._setDebugMode(process.env.NODE_ENV === 'development');
   }
 
@@ -53,7 +52,6 @@ class ReaderJsHelper {
       /* ignore */
     }
     this._readerJs = null;
-    this._node = null;
   }
 
   reviseImages() {

@@ -1,22 +1,20 @@
 import React from 'react';
-import { fetchBook, invalidate } from './content-loader';
-import Events, { SET_CONTENT_METADATA } from './reader/Events';
+import { invalidate, load } from './content-loader';
 import { renderContext } from './setting';
 
-export default class TopBar extends React.Component {
+export default class Header extends React.Component {
   constructor(props) {
     super(props);
     this.onFileChanged = this.onFileChanged.bind(this);
-    this.onScrollModeSettingChange = this.onScrollModeSettingChange.bind(this);
+    this.onSettingChanged = this.onSettingChanged.bind(this);
     this.onFileOpen = this.onFileOpen.bind(this);
   }
 
   onFileChanged() {
-    const file = document.getElementById('import').files[0];
-    fetchBook(file).then(metadata => Events.emit(SET_CONTENT_METADATA, metadata));
+    load(document.getElementById('import').files[0]);
   }
 
-  onScrollModeSettingChange() {
+  onSettingChanged() {
     const old = renderContext.scrollMode;
     setTimeout(() => {
       renderContext.scrollMode = !old;
@@ -34,7 +32,7 @@ export default class TopBar extends React.Component {
       <div id="title_bar" className="navbar">
         <span id="title" className="navbar_title" aria-label="Title">Pilot Project</span>
         <div className="title_bar_right_container">
-          <input id="scroll_mode_setting" type="checkbox" onChange={this.onScrollModeSettingChange} />
+          <input id="scroll_mode_setting" type="checkbox" onChange={this.onSettingChanged} />
           <span className="scroll_mode_setting_label">Scroll Mode</span>
           <button
             id="open_file"
