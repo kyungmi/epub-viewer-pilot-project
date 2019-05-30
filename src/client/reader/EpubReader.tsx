@@ -1,18 +1,21 @@
-import React from 'react';
+import React, {RefObject} from 'react';
 import { invalidate, updateCurrent } from '../content-loader';
 import { uiRefs } from '../setting';
 import Events, { SET_CONTENT } from './Events';
 import ReaderJsHelper from './ReaderJsHelper';
 
+export interface EpubReaderState {
+  content: string,
+}
+
 export default class EpubReader extends React.Component {
-  contentRef = React.createRef();
+  contentRef: RefObject<HTMLDivElement> = React.createRef();
+  state: Readonly<EpubReaderState> = {
+    content: '',
+  };
 
-  constructor(props) {
+  constructor(props: any) {
     super(props);
-
-    this.state = {
-      content: null,
-    };
 
     this.onContentSet = this.onContentSet.bind(this);
   }
@@ -32,7 +35,7 @@ export default class EpubReader extends React.Component {
     window.removeEventListener('resize', invalidate);
   }
 
-  onContentSet(spines) {
+  onContentSet(spines: Array<string>) {
     this.setState({ content: spines.join('') });
   }
 

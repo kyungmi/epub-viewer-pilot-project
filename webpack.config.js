@@ -10,22 +10,9 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.jsx?$/,
+        test: /\.(tsx?)|(jsx?)$/,
         loader: 'babel-loader',
         exclude: [/node_modules/],
-        query: {
-          presets: [
-            '@babel/preset-env',
-            '@babel/preset-react',
-          ],
-          plugins: [
-            ['@babel/plugin-proposal-class-properties', { loose: false }],
-            ['@babel/plugin-proposal-object-rest-spread', { useBuiltIns: true }],
-            ['@babel/plugin-transform-classes', { loose: true }],
-            ['@babel/plugin-transform-proto-to-assign'],
-            ['@babel/plugin-transform-runtime'],
-          ],
-        },
       },
     ],
   },
@@ -38,7 +25,7 @@ module.exports = {
     },
   },
   resolve: {
-    extensions: ['.js', '.jsx'],
+    extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
   },
   plugins: [
     new HtmlWebpackPlugin({

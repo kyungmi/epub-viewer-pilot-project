@@ -7,30 +7,31 @@ const DETECTION_TYPE = 'top'; // bottom or top
 const EMPTY_READ_LOCATION = '-1#-1';
 
 class ReaderJsHelper {
-  _readerJs = null;
-
+  private _readerJs: Reader | null = null;
 
   get readerJs() {
     return this._readerJs;
   }
 
   get sel() {
-    return this._readerJs.sel;
+    return this._readerJs ? this._readerJs.sel : null;
   }
 
   get content() {
-    return this._readerJs.content;
+    return this._readerJs ? this._readerJs.content : null;
   }
 
   get context() {
-    return this._readerJs.context;
+    return this._readerJs ? this._readerJs.context : null;
   }
 
   _setDebugMode(debugMode = false) {
-    this._readerJs.debugNodeLocation = debugMode;
+    if (this._readerJs) {
+      this._readerJs.debugNodeLocation = debugMode;
+    }
   }
 
-  _createContext(node, isScrollMode, maxSelectionLength = 1000) {
+  _createContext(node: HTMLElement, isScrollMode: boolean, maxSelectionLength: number = 1000) {
     const columnGap = Util.getStylePropertyIntValue(node, 'column-gap');
     const width = window.innerWidth - columnGap;
     const height = window.innerHeight;
@@ -41,13 +42,16 @@ class ReaderJsHelper {
     if (this._readerJs) {
       this.unmount();
     }
+    if (!uiRefs.contentRoot) return;
     this._readerJs = new Reader(uiRefs.contentRoot, this._createContext(uiRefs.contentRoot, renderContext.scrollMode));
     this._setDebugMode(process.env.NODE_ENV === 'development');
   }
 
   unmount() {
     try {
-      this._readerJs.unmount();
+      if (this._readerJs) {
+        this._readerJs.unmount();
+      }
     } catch (e) {
       /* ignore */
     }
@@ -55,9 +59,9 @@ class ReaderJsHelper {
   }
 
   reviseImages() {
-    return measure(new Promise((resolve) => {
+    return measure(() => new Promise((resolve) => {
       try {
-        this._readerJs.content.reviseImages(resolve);
+        this.content.reviseImages(resolve);
       } catch (e) { /* ignore */
         console.warn(e);
         resolve();
@@ -65,26 +69,31 @@ class ReaderJsHelper {
     }), 'revise images');
   }
 
-  getOffsetFromNodeLocation(location) {
+  getOffsetFromNodeLocation(location: any): number | null {
+    if (!this.readerJs) return null;
     if (isExist(location) && location !== EMPTY_READ_LOCATION) {
       return this.readerJs.getOffsetFromNodeLocation(location, DETECTION_TYPE);
     }
     return null;
   }
 
-  getNodeLocationOfCurrentPage() {
+  getNodeLocationOfCurrentPage(): string | null {
+    if (!this.readerJs) return null;
     return this.readerJs.getNodeLocationOfCurrentPage(DETECTION_TYPE);
   }
 
-  getRectsFromSerializedRange(serializedRange) {
+  getRectsFromSerializedRange(serializedRange: string): Array<any> | null {
+    if (!this.readerJs) return null;
     return this.readerJs.getRectsFromSerializedRange(serializedRange);
   }
 
-  getOffsetFromSerializedRange(serializedRange) {
+  getOffsetFromSerializedRange(serializedRange: string): number | null {
+    if (!this.readerJs) return null;
     return this.readerJs.getOffsetFromSerializedRange(serializedRange);
   }
 
-  getOffsetFromAnchor(anchor) {
+  getOffsetFromAnchor(anchor: string): number | null {
+    if (!this.readerJs) return null;
     return this.readerJs.getOffsetFromAnchor(anchor);
   }
 }

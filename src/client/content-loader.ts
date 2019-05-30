@@ -1,11 +1,11 @@
 import axios from 'axios';
-import { getRootElement, measure } from './util';
+import {getScrollHeight, getScrollWidth, measure} from './util';
 import { paging, renderContext, status, uiRefs } from './setting';
 import ReaderJsHelper from './reader/ReaderJsHelper';
 import Events, { SET_CONTENT, SET_READY_TO_READ, UPDATE_PAGE } from './reader/Events';
 
 //
-function setStartToRead(startToRead) {
+function setStartToRead(startToRead: boolean) {
   return new Promise((resolve) => {
     setTimeout(() => {
       status.startToRead = startToRead;
@@ -16,7 +16,7 @@ function setStartToRead(startToRead) {
   });
 }
 
-async function inLoadingState(run) {
+async function inLoadingState(run: () => any) {
   await setStartToRead(false);
   const result = await run();
   await setStartToRead(true);
@@ -29,13 +29,13 @@ function startPaging() {
     paging.totalPage = 0;
     if (renderContext.scrollMode) {
       paging.pageUnit = document.documentElement.clientHeight;
-      paging.fullHeight = getRootElement().scrollHeight;
+      paging.fullHeight = getScrollHeight();
       // 어차피 스크롤보기에서 마지막 페이지에 도달하는 것은 불가능하므로, Math.floor로 계산
       paging.totalPage = Math.floor(paging.fullHeight / paging.pageUnit);
     } else {
       paging.pageUnit = document.documentElement.clientWidth + renderContext.columnGap;
-      paging.fullWidth = getRootElement().scrollWidth;
-      paging.totalPage = Math.ceil(getRootElement().scrollWidth / paging.pageUnit);
+      paging.fullWidth = getScrollWidth();
+      paging.totalPage = Math.ceil(paging.fullWidth / paging.pageUnit);
     }
     Events.emit(UPDATE_PAGE, paging);
     console.log('paging =>', paging);
@@ -43,7 +43,7 @@ function startPaging() {
 }
 
 
-function appendStyles(data) {
+function appendStyles(data: any) {
   return measure(() => {
     const element = document.createElement('style');
     element.innerText = data.styles.join(' ');
@@ -52,26 +52,32 @@ function appendStyles(data) {
   }, 'Added Styles');
 }
 
-function prepareFonts(data) {
-  const fontSet = data.fonts.map(font => font.href).map((href) => {
+
+interface FontData {
+  href: string,
+}
+
+interface BookParsedData {
+  fonts?: Array<FontData>,
+  unzipPath: string,
+}
+
+function prepareFonts(data: BookParsedData): Promise<BookParsedData> {
+  if (!data.fonts) return Promise.resolve(data);
+  const fontFaces = data.fonts.map(font => font.href).map((href) => {
     const name = href.split('/').slice(-1)[0].replace(/\./g, '_');
-    return {
-      name,
-      url: `${data.unzipPath}/${href}`,
-    };
+    return new FontFace(name, `url(${data.unzipPath}/${href})`);
   });
 
-  const fontFaces = fontSet.map(({ name, url }) => new FontFace(name, `url(${url})`));
-
-  return measure(Promise.all(fontFaces.map(fontFace => fontFace.load())).then(() => {
-    fontFaces.forEach(f => document.fonts.add(f));
+  return measure(() => Promise.all(fontFaces.map(fontFace => fontFace.load())).then(() => {
+    fontFaces.forEach(f => (document as any).fonts.add(f));
     return data;
   }), `${data.fonts.length} fonts loaded`);
 }
 
 function waitImagesLoaded() {
   const imageCount = document.images.length;
-  return measure(new Promise((onImagesLoaded) => {
+  return measure(() => new Promise((onImagesLoaded) => {
     let count = 0;
     const tap = () => {
       count += 1;
@@ -90,7 +96,7 @@ function waitImagesLoaded() {
   }), `${imageCount} images loaded`);
 }
 
-function parseBook(file) {
+function parseBook(file: File) {
   return axios.get(`/api/book?filename=${encodeURI(file.name)}`).then((response) => {
     return response.data;
   }).catch((error) => {
@@ -111,14 +117,14 @@ function updateContentStyle() {
     const canvasHeight = document.documentElement.clientHeight - navigationBarHeight;
     const { contentRoot } = uiRefs;
     if (renderContext.scrollMode) {
-      contentRoot.style = '';
+      if (contentRoot) contentRoot.removeAttribute('style');
     } else {
       const { columnGap, columnsInPage } = renderContext;
-      contentRoot.style = `
-      -webkit-column-width: ${(canvasWidth - (columnGap * (columnsInPage - 1))) / columnsInPage}px;
-      -webkit-column-gap: ${columnGap}px;
-      height: ${canvasHeight}px;
-    `;
+      if (contentRoot) contentRoot.setAttribute('style', `
+        -webkit-column-width: ${(canvasWidth - (columnGap * (columnsInPage - 1))) / columnsInPage}px;
+        -webkit-column-gap: ${columnGap}px;
+        height: ${canvasHeight}px;
+      `);
     }
     setTimeout(resolve, 0); // 스타일 갱신 완료를 기다림
   });
@@ -136,19 +142,18 @@ export function invalidate() {
     .then(restoreCurrent));
 }
 
-export function load(file) {
+export function load(file: File) {
   return parseBook(file).then((metadata) => {
     // style 붙이기 -> 폰트 preload -> spine 붙이기 -> 이미지 로드 대기 -> 페이지 계산
     return appendStyles(metadata)
       .then(() => prepareFonts(metadata))
       .then(() => Events.emit(SET_CONTENT, metadata.spines))
       .then(() => invalidate())
-      .catch(e => console.error(e));
+      .catch((e: any) => console.error(e));
   });
 }
 
-
-export function goToPage(page) {
+export function goToPage(page: number) {
   return inLoadingState(() => measure(() => {
     const { pageUnit } = paging;
     if (renderContext.scrollMode) {
