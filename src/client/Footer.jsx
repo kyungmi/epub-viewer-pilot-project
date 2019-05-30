@@ -21,12 +21,12 @@ export default class Footer extends React.Component {
   }
 
   onInputCurrentPage(e) {
-    const newValue = parseInt(e.target.value, 10);
-    console.log('onInputCurrentPage', newValue);
     if (e.key === 'Enter') {
-      goToPage(newValue);
+      goToPage(this.state.currentPage);
+    } else {
+      const newValue = parseInt(e.target.value, 10);
+      this.setState({ currentPage: newValue });
     }
-    this.setState({ currentPage: newValue });
   }
 
   render() {

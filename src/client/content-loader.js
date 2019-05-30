@@ -2,9 +2,27 @@ import axios from 'axios';
 import { getRootElement, measure } from './util';
 import { paging, renderContext, status, uiRefs } from './setting';
 import ReaderJsHelper from './reader/ReaderJsHelper';
-import Events, { SET_CONTENT, UPDATE_PAGE } from './reader/Events';
+import Events, { SET_CONTENT, SET_READY_TO_READ, UPDATE_PAGE } from './reader/Events';
 
 //
+function setStartToRead(startToRead) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      status.startToRead = startToRead;
+      Events.emit(SET_READY_TO_READ, startToRead);
+      console.log(`startToRead => ${startToRead}`);
+      resolve();
+    }, 0);
+  });
+}
+
+async function inLoadingState(run) {
+  await setStartToRead(false);
+  const result = await run();
+  await setStartToRead(true);
+  return result;
+}
+
 // 페이징
 function startPaging() {
   return measure(() => {
@@ -24,6 +42,7 @@ function startPaging() {
   }, 'Paging done');
 }
 
+
 function appendStyles(data) {
   return measure(() => {
     const element = document.createElement('style');
@@ -32,7 +51,6 @@ function appendStyles(data) {
     return data;
   }, 'Added Styles');
 }
-
 
 function prepareFonts(data) {
   const fontSet = data.fonts.map(font => font.href).map((href) => {
@@ -87,52 +105,35 @@ function parseBook(file) {
 }
 
 function updateContentStyle() {
-  const navigationBarHeight = document.getElementsByClassName('navbar')[0].clientHeight;
-  const canvasWidth = document.documentElement.clientWidth;
-  const canvasHeight = document.documentElement.clientHeight - navigationBarHeight;
-  const { contentRoot } = uiRefs;
-  if (renderContext.scrollMode) {
-    contentRoot.style = '';
-  } else {
-    const { columnGap, columnsInPage } = renderContext;
-    contentRoot.style = `
+  return new Promise((resolve) => {
+    const navigationBarHeight = document.getElementsByClassName('navbar')[0].clientHeight;
+    const canvasWidth = document.documentElement.clientWidth;
+    const canvasHeight = document.documentElement.clientHeight - navigationBarHeight;
+    const { contentRoot } = uiRefs;
+    if (renderContext.scrollMode) {
+      contentRoot.style = '';
+    } else {
+      const { columnGap, columnsInPage } = renderContext;
+      contentRoot.style = `
       -webkit-column-width: ${(canvasWidth - (columnGap * (columnsInPage - 1))) / columnsInPage}px;
       -webkit-column-gap: ${columnGap}px;
       height: ${canvasHeight}px;
     `;
-  }
-}
-
-export function goToPage(page) {
-  const { pageUnit } = paging;
-  return measure(() => {
-    if (renderContext.scrollMode) {
-      document.documentElement.scrollTop = (page - 1) * pageUnit;
-    } else {
-      document.documentElement.scrollLeft = (page - 1) * pageUnit;
     }
-    paging.currentPage = page;
-  }, `Go to page => ${page}`);
+    setTimeout(resolve, 0); // 스타일 갱신 완료를 기다림
+  });
 }
-
 function restoreCurrent() {
   const { currentPage } = paging;
   return measure(() => goToPage(currentPage), `Restore current page => ${currentPage}`);
 }
 
-function setRestoring(restoring) {
-  status.restoring = restoring;
-  console.log(`restoring => ${restoring}`);
-}
-
 export function invalidate() {
-  setRestoring(true);
-  updateContentStyle();
-  setTimeout(() => {
-    startPaging()
-      .then(restoreCurrent)
-      .then(() => setRestoring(false));
-  }, 0); // 스타일 갱신 완료를 기다림
+  return inLoadingState(() => updateContentStyle()
+    .then(waitImagesLoaded)
+    .then(() => ReaderJsHelper.reviseImages())
+    .then(startPaging)
+    .then(restoreCurrent));
 }
 
 export function load(file) {
@@ -141,25 +142,37 @@ export function load(file) {
     return appendStyles(metadata)
       .then(() => prepareFonts(metadata))
       .then(() => Events.emit(SET_CONTENT, metadata.spines))
-      .then(waitImagesLoaded)
-      .then(() => ReaderJsHelper.reviseImages())
-      .then(() => setRestoring(true))
-      .then(startPaging)
-      .then(restoreCurrent)
-      .then(() => setRestoring(false))
+      .then(() => invalidate())
       .catch(e => console.error(e));
   });
 }
 
+
+export function goToPage(page) {
+  return inLoadingState(() => measure(() => {
+    const { pageUnit } = paging;
+    if (renderContext.scrollMode) {
+      document.documentElement.scrollLeft = 0;
+      document.documentElement.scrollTop = (page - 1) * pageUnit;
+    } else {
+      document.documentElement.scrollTop = 0;
+      document.documentElement.scrollLeft = (page - 1) * pageUnit;
+    }
+    paging.currentPage = page;
+    Events.emit(UPDATE_PAGE, paging);
+  }, `Go to page => ${page} (${(page - 1) * paging.pageUnit})`));
+}
+
 export function updateCurrent() {
-  if (status.restoring) return null;
+  if (!status.startToRead) return null;
   return measure(() => {
+    const { pageUnit } = paging;
     if (renderContext.scrollMode) {
       const { scrollTop } = document.documentElement;
-      paging.currentPage = Math.floor((scrollTop / paging.fullHeight) * paging.totalPage) + 1;
+      paging.currentPage = Math.floor(scrollTop / pageUnit) + 1;
     } else {
       const { scrollLeft } = document.documentElement;
-      paging.currentPage = Math.floor((scrollLeft / paging.fullWidth) * paging.totalPage) + 1;
+      paging.currentPage = Math.floor(scrollLeft / pageUnit) + 1;
     }
     Events.emit(UPDATE_PAGE, paging);
   }, 'update current page');

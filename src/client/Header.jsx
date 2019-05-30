@@ -8,18 +8,32 @@ export default class Header extends React.Component {
     this.onFileChanged = this.onFileChanged.bind(this);
     this.onSettingChanged = this.onSettingChanged.bind(this);
     this.onFileOpen = this.onFileOpen.bind(this);
+
+    this.state = {
+      viewType: '1page',
+    };
   }
 
   onFileChanged() {
     load(document.getElementById('import').files[0]);
   }
 
-  onSettingChanged() {
-    const old = renderContext.scrollMode;
-    setTimeout(() => {
-      renderContext.scrollMode = !old;
-      invalidate();
-    }, 100); // Checkbox 갱신을 기다림
+  onSettingChanged(viewType) {
+    if (viewType === this.state.viewType) return;
+
+    if (viewType === 'scroll') {
+      renderContext.scrollMode = true;
+      renderContext.columnsInPage = 1;
+    } else if (viewType === '1page') {
+      renderContext.scrollMode = false;
+      renderContext.columnsInPage = 1;
+    } else if (viewType === '2page') {
+      renderContext.scrollMode = false;
+      renderContext.columnsInPage = 2;
+    }
+
+    invalidate();
+    this.setState({ viewType });
   }
 
   onFileOpen() {
@@ -28,12 +42,14 @@ export default class Header extends React.Component {
   }
 
   render() {
+    const { viewType } = this.state;
     return (
       <div id="title_bar" className="navbar">
         <span id="title" className="navbar_title" aria-label="Title">Pilot Project</span>
         <div className="title_bar_right_container">
-          <input id="scroll_mode_setting" type="checkbox" onChange={this.onSettingChanged} />
-          <span className="scroll_mode_setting_label">Scroll Mode</span>
+          <button type="button" onClick={() => this.onSettingChanged('scroll')} className={viewType === 'scroll' ? 'active' : ''}>스크롤 보기</button>
+          <button type="button" onClick={() => this.onSettingChanged('1page')} className={viewType === '1page' ? 'active' : ''}>1페이지 보기</button>
+          <button type="button" onClick={() => this.onSettingChanged('2page')} className={viewType === '2page' ? 'active' : ''}>2페이지 보기</button>
           <button
             id="open_file"
             type="button"

@@ -19,5 +19,5 @@ export const paging = {
 };
 
 export const status = {
-  restoring: false,
+  startToRead: false,
 };
