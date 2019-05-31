@@ -18,3 +18,11 @@ export function getScrollHeight(): number {
   const rootElement = getRootElement();
   return rootElement ? rootElement.scrollHeight : 0;
 }
+
+export function getClientWidth(): number {
+  return document.documentElement.clientWidth;
+}
+
+export function getClientHeight(): number {
+  return document.documentElement.clientHeight;
+}

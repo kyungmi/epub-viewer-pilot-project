@@ -1,7 +1,7 @@
 import { Context, Reader, Util } from '@ridi/reader.js/web';
 import { isExist } from './Util';
 import { measure } from '../util';
-import { renderContext, uiRefs } from '../setting';
+import {epubSetting, uiRefs, ViewType} from '../setting';
 
 const DETECTION_TYPE = 'top'; // bottom or top
 const EMPTY_READ_LOCATION = '-1#-1';
@@ -43,7 +43,7 @@ class ReaderJsHelper {
       this.unmount();
     }
     if (!uiRefs.contentRoot) return;
-    this._readerJs = new Reader(uiRefs.contentRoot, this._createContext(uiRefs.contentRoot, renderContext.scrollMode));
+    this._readerJs = new Reader(uiRefs.contentRoot, this._createContext(uiRefs.contentRoot, epubSetting.viewType === ViewType.SCROLL));
     this._setDebugMode(process.env.NODE_ENV === 'development');
   }
 

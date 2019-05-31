@@ -1,6 +1,6 @@
 import axios from 'axios';
-import {getScrollHeight, getScrollWidth, measure} from './util';
-import { paging, renderContext, status, uiRefs } from './setting';
+import {getClientHeight, getClientWidth, getScrollHeight, getScrollWidth, measure} from './util';
+import { paging, epubSetting, status, uiRefs } from './setting';
 import ReaderJsHelper from './reader/ReaderJsHelper';
 import Events, { SET_CONTENT, SET_READY_TO_READ, UPDATE_PAGE } from './reader/Events';
 
@@ -27,13 +27,13 @@ async function inLoadingState(run: () => any) {
 function startPaging() {
   return measure(() => {
     paging.totalPage = 0;
-    if (renderContext.scrollMode) {
-      paging.pageUnit = document.documentElement.clientHeight;
+    if (epubSetting.isScroll) {
+      paging.pageUnit = getClientHeight();
       paging.fullHeight = getScrollHeight();
       // 어차피 스크롤보기에서 마지막 페이지에 도달하는 것은 불가능하므로, Math.floor로 계산
       paging.totalPage = Math.floor(paging.fullHeight / paging.pageUnit);
     } else {
-      paging.pageUnit = document.documentElement.clientWidth + renderContext.columnGap;
+      paging.pageUnit = getClientWidth() + epubSetting.columnGap;
       paging.fullWidth = getScrollWidth();
       paging.totalPage = Math.ceil(paging.fullWidth / paging.pageUnit);
     }
@@ -116,10 +116,10 @@ function updateContentStyle() {
     const canvasWidth = document.documentElement.clientWidth;
     const canvasHeight = document.documentElement.clientHeight - navigationBarHeight;
     const { contentRoot } = uiRefs;
-    if (renderContext.scrollMode) {
+    if (epubSetting.isScroll) {
       if (contentRoot) contentRoot.removeAttribute('style');
     } else {
-      const { columnGap, columnsInPage } = renderContext;
+      const { columnGap, columnsInPage } = epubSetting;
       if (contentRoot) contentRoot.setAttribute('style', `
         -webkit-column-width: ${(canvasWidth - (columnGap * (columnsInPage - 1))) / columnsInPage}px;
         -webkit-column-gap: ${columnGap}px;
@@ -139,7 +139,8 @@ export function invalidate() {
     .then(waitImagesLoaded)
     .then(() => ReaderJsHelper.reviseImages())
     .then(startPaging)
-    .then(restoreCurrent));
+    .then(restoreCurrent))
+    .catch((e: any) => console.error(e));
 }
 
 export function load(file: File) {
@@ -156,7 +157,7 @@ export function load(file: File) {
 export function goToPage(page: number) {
   return inLoadingState(() => measure(() => {
     const { pageUnit } = paging;
-    if (renderContext.scrollMode) {
+    if (epubSetting.isScroll) {
       document.documentElement.scrollLeft = 0;
       document.documentElement.scrollTop = (page - 1) * pageUnit;
     } else {
@@ -172,7 +173,7 @@ export function updateCurrent() {
   if (!status.startToRead) return null;
   return measure(() => {
     const { pageUnit } = paging;
-    if (renderContext.scrollMode) {
+    if (epubSetting.isScroll) {
       const { scrollTop } = document.documentElement;
       paging.currentPage = Math.floor(scrollTop / pageUnit) + 1;
     } else {
