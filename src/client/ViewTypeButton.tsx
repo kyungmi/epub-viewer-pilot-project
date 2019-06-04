@@ -1,13 +1,14 @@
-import React from 'react';
-import {ViewType} from './setting';
+import React, {useContext} from 'react';
+import {SettingStateContext, SettingDispatchContext, SettingActionType, ViewType} from './reader/Context';
 
 interface ViewTypeButtonProperty {
   viewType: ViewType,
-  onSelect: (viewType: ViewType) => void,
-  className: string,
 }
 
-const ViewTypeButton: React.FunctionComponent<ViewTypeButtonProperty> = ({ viewType, onSelect, className }) => {
+const ViewTypeButton: React.FunctionComponent<ViewTypeButtonProperty> = ({ viewType }) => {
+  const settingState = useContext(SettingStateContext);
+  const settingDispatch = useContext(SettingDispatchContext);
+
   const getLabel = (viewType: ViewType): string => {
     if (viewType === ViewType.SCROLL) return '스크롤 보기';
     if (viewType === ViewType.PAGE1) return '1페이지 보기';
@@ -16,7 +17,15 @@ const ViewTypeButton: React.FunctionComponent<ViewTypeButtonProperty> = ({ viewT
     return '보기 방식 없음';
   };
 
-  return (<button type="button" onClick={() => onSelect(viewType)} className={className}>{getLabel(viewType)}</button>);
+  return (
+    <button
+      type="button"
+      onClick={() => settingDispatch({ type: SettingActionType.UPDATE_SETTING, setting: { viewType } })}
+      className={settingState.viewType === viewType ? 'active' : ''}
+    >
+      {getLabel(viewType)}
+    </button>
+  );
 };
 
 export default ViewTypeButton;

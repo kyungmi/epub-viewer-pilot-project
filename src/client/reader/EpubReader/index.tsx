@@ -1,54 +1,57 @@
 /** @jsx jsx */
 import { jsx } from '@emotion/core';
-import * as React from 'react';
-import { invalidate, updateCurrent } from '../../content-loader';
-import { uiRefs } from '../../setting';
+import React, {useContext, useEffect, useState} from 'react';
+import {uiRefs} from '../../setting';
+import {PagingStateContext, SettingStateContext} from '../Context';
+import * as SettingUtil from '../SettingUtil';
 import Events, { SET_CONTENT } from '../Events';
 import ReaderJsHelper from '../ReaderJsHelper';
+import * as EpubUtil from '../EpubContentUtil';
 import * as styles from './styles';
 
-export interface EpubReaderState {
-  content: string,
-}
+const EpubReader = () => {
+  const contentRef: React.RefObject<HTMLDivElement> = React.createRef();
+  const [content, setContent] = useState('');
+  const pagingState = useContext(PagingStateContext);
+  const settingState = useContext(SettingStateContext);
 
-export default class EpubReader extends React.Component {
-  contentRef: React.RefObject<HTMLDivElement> = React.createRef();
-  state: Readonly<EpubReaderState> = {
-    content: '',
-  };
+  const setSpineContent = (spines: Array<String>) => setContent(spines.join(''));
 
-  constructor(props: any) {
-    super(props);
+  useEffect(() => {
+    uiRefs.contentRoot = contentRef.current;
+    ReaderJsHelper.mount(SettingUtil.isScroll(settingState));
 
-    this.onContentSet = this.onContentSet.bind(this);
-  }
+    Events.on(SET_CONTENT, setSpineContent);
 
-  componentDidMount() {
-    uiRefs.contentRoot = this.contentRef.current;
-    ReaderJsHelper.mount();
+    return () => {
+      Events.off(SET_CONTENT, setSpineContent);
+    };
+  }, []);
 
-    invalidate();
+  useEffect(() => {
+    const invalidate = () => EpubUtil.invalidate(pagingState, settingState);
+    const updateCurrent = () => EpubUtil.updateCurrent(pagingState, settingState);
 
     window.addEventListener('resize', invalidate);
     window.addEventListener('scroll', updateCurrent);
-    Events.on(SET_CONTENT, this.onContentSet);
-  }
+    return () => {
+      window.removeEventListener('resize', invalidate);
+      window.removeEventListener('scroll', updateCurrent);
+    };
+  }, [settingState, pagingState]);
 
-  componentWillUnmount() {
-    window.removeEventListener('resize', invalidate);
-  }
+  useEffect(() => {
+    ReaderJsHelper.mount(SettingUtil.isScroll(settingState));
+    EpubUtil.invalidate(pagingState, settingState)
+  }, [settingState]);
 
-  onContentSet(spines: Array<string>) {
-    this.setState({ content: spines.join('') });
-  }
+  return (
+    <div
+      css={styles.wrapper(settingState)}
+      ref={contentRef}
+      dangerouslySetInnerHTML={{ __html: content }}
+    />
+  );
+};
 
-  render() {
-    return (
-      <div
-        css={styles.wrapper}
-        ref={this.contentRef}
-        dangerouslySetInnerHTML={{ __html: this.state.content }}
-      />
-    );
-  }
-}
+export default EpubReader;

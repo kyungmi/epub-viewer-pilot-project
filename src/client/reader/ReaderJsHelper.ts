@@ -1,7 +1,7 @@
 import { Context, Reader, Util } from '@ridi/reader.js/web';
 import { isExist } from './Util';
 import { measure } from '../util';
-import {epubSetting, uiRefs, ViewType} from '../setting';
+import {uiRefs} from '../setting';
 
 const DETECTION_TYPE = 'top'; // bottom or top
 const EMPTY_READ_LOCATION = '-1#-1';
@@ -38,12 +38,12 @@ class ReaderJsHelper {
     return new Context(width, height, columnGap, false, isScrollMode, maxSelectionLength);
   }
 
-  mount() {
+  mount(isScroll: boolean) {
     if (this._readerJs) {
       this.unmount();
     }
     if (!uiRefs.contentRoot) return;
-    this._readerJs = new Reader(uiRefs.contentRoot, this._createContext(uiRefs.contentRoot, epubSetting.viewType === ViewType.SCROLL));
+    this._readerJs = new Reader(uiRefs.contentRoot, this._createContext(uiRefs.contentRoot, isScroll));
     this._setDebugMode(process.env.NODE_ENV === 'development');
   }
 
