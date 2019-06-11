@@ -1,19 +1,20 @@
 import React, {RefObject, useContext} from 'react';
 import ViewTypeButton from './ViewTypeButton';
-import { SettingStateContext, PagingStateContext, ViewType } from './reader/Context';
-import * as EpubUtil from './reader/EpubContentUtil';
+import { SettingContext, PagingContext, ViewType } from './reader/Context';
+import EpubService from './reader/EpubService';
+import {columnGap, isScroll} from "./reader/SettingUtil";
 
 const Header: React.FunctionComponent = () => {
   const fileInputRef: RefObject<HTMLInputElement> = React.createRef();
   const fileOpenButtonRef: RefObject<HTMLButtonElement> = React.createRef();
 
-  const settingState = useContext(SettingStateContext);
-  const pagingState = useContext(PagingStateContext);
+  const settingState = useContext(SettingContext);
+  const pagingState = useContext(PagingContext);
 
   const onFileChanged = () => {
     const { current: fileInput } = fileInputRef;
     if (fileInput && fileInput.files) {
-      EpubUtil.load(fileInput.files[0], pagingState, settingState);
+      EpubService.load(fileInput.files[0], pagingState.currentPage, isScroll(settingState), columnGap(settingState));
     }
   };
 

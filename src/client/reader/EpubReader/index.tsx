@@ -2,24 +2,25 @@
 import { jsx } from '@emotion/core';
 import React, {useContext, useEffect, useState} from 'react';
 import {uiRefs} from '../../setting';
-import {PagingStateContext, SettingStateContext} from '../Context';
-import * as SettingUtil from '../SettingUtil';
+import {PagingContext, SettingContext, StatusContext} from '../Context';
+import {columnGap, isScroll} from '../SettingUtil';
 import Events, { SET_CONTENT } from '../Events';
 import ReaderJsHelper from '../ReaderJsHelper';
-import * as EpubUtil from '../EpubContentUtil';
+import EpubService from '../EpubService';
 import * as styles from './styles';
 
 const EpubReader = () => {
   const contentRef: React.RefObject<HTMLDivElement> = React.createRef();
   const [content, setContent] = useState('');
-  const pagingState = useContext(PagingStateContext);
-  const settingState = useContext(SettingStateContext);
+  const pagingState = useContext(PagingContext);
+  const settingState = useContext(SettingContext);
+  const statusState = useContext(StatusContext);
 
   const setSpineContent = (spines: Array<String>) => setContent(spines.join(''));
 
   useEffect(() => {
     uiRefs.contentRoot = contentRef.current;
-    ReaderJsHelper.mount(SettingUtil.isScroll(settingState));
+    ReaderJsHelper.mount(isScroll(settingState));
 
     Events.on(SET_CONTENT, setSpineContent);
 
@@ -29,8 +30,11 @@ const EpubReader = () => {
   }, []);
 
   useEffect(() => {
-    const invalidate = () => EpubUtil.invalidate(pagingState, settingState);
-    const updateCurrent = () => EpubUtil.updateCurrent(pagingState, settingState);
+    const invalidate = () => EpubService.invalidate(pagingState.currentPage, isScroll(settingState), columnGap(settingState));
+    const updateCurrent = () => {
+      if (!statusState.startToRead) return;
+      EpubService.updateCurrent(pagingState.pageUnit, isScroll(settingState));
+    };
 
     window.addEventListener('resize', invalidate);
     window.addEventListener('scroll', updateCurrent);
@@ -38,11 +42,11 @@ const EpubReader = () => {
       window.removeEventListener('resize', invalidate);
       window.removeEventListener('scroll', updateCurrent);
     };
-  }, [settingState, pagingState]);
+  }, [settingState, pagingState, statusState]);
 
   useEffect(() => {
-    ReaderJsHelper.mount(SettingUtil.isScroll(settingState));
-    EpubUtil.invalidate(pagingState, settingState)
+    ReaderJsHelper.mount(isScroll(settingState));
+    EpubService.invalidate(pagingState.currentPage, isScroll(settingState), columnGap(settingState));
   }, [settingState]);
 
   return (

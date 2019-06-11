@@ -1,12 +1,12 @@
 import React, {useContext} from 'react';
-import {SettingStateContext, SettingDispatchContext, SettingActionType, ViewType} from './reader/Context';
+import {SettingContext, SettingDispatchContext, SettingActionType, ViewType} from './reader/Context';
 
 interface ViewTypeButtonProperty {
   viewType: ViewType,
 }
 
 const ViewTypeButton: React.FunctionComponent<ViewTypeButtonProperty> = ({ viewType }) => {
-  const settingState = useContext(SettingStateContext);
+  const settingState = useContext(SettingContext);
   const settingDispatch = useContext(SettingDispatchContext);
 
   const getLabel = (viewType: ViewType): string => {

@@ -46,6 +46,6 @@ export const settingReducer: Reducer<SettingState, SettingAction> = (state, acti
 
 export const {
   DispatchContext: SettingDispatchContext,
-  StateContext: SettingStateContext,
+  StateContext: SettingContext,
   ContextProvider: SettingContextProvider,
 } = generateContext(settingReducer, initialSettingState);

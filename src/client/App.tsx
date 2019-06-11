@@ -3,17 +3,15 @@ import Footer from './Footer';
 import Loading from './reader/Loading';
 import Header from './Header';
 import EpubReader from './reader/EpubReader';
-import { SettingContextProvider, PagingContextProvider } from './reader/Context';
+import { EpubContextProvider } from './reader/Context';
 
 const App: React.FunctionComponent = () => (
-  <SettingContextProvider>
-    <PagingContextProvider>
-      <Header />
-      <EpubReader />
-      <Footer />
-      <Loading />
-    </PagingContextProvider>
-  </SettingContextProvider>
+  <EpubContextProvider>
+    <Header />
+    <EpubReader />
+    <Footer />
+    <Loading />
+  </EpubContextProvider>
 );
 
 export default App;

@@ -1,5 +1,5 @@
-import {Reducer} from "react";
-import { generateContext } from "./ContextProvider";
+import {Reducer} from 'react';
+import { generateContext } from './ContextProvider';
 
 export enum PagingActionType {
   UPDATE_PAGING,
@@ -34,6 +34,6 @@ export const PagingReducer: Reducer<PagingState, PagingAction> = (state, action)
 
 export const {
   DispatchContext: PagingDispatchContext,
-  StateContext: PagingStateContext,
+  StateContext: PagingContext,
   ContextProvider: PagingContextProvider,
 } = generateContext(PagingReducer, initialPagingState);
